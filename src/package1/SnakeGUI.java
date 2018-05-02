@@ -5,25 +5,31 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.GridLayout;
-import java.awt.JobAttributes;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.LinkedList;
 
-import javax.swing.*;
-
+import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.border.Border;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JSlider;
+import javax.swing.JTextField;
+import javax.swing.Timer;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 public class SnakeGUI extends JFrame {
 	
+	private static final long serialVersionUID = -5089368211955628780L;
+	
 	private final static int NORTH = 1, EAST = 2, SOUTH = 3, WEST = 4;
-	private final static int NUMBER_OF_ROWS = 20, NUMBER_OF_COLUMNS = 20;
+	private final static int DEFAULT_NUMBER_OF_ROWS = 20, DEFAULT_NUMBER_OF_COLUMNS = 20;
+	private final static int MAX_NUMBER_OF_ROWS = 50, MAX_NUMBER_OF_COLUMNS = 50;
+	private final static int MIN_NUMBER_OF_ROWS = 15, MIN_NUMBER_OF_COLUMNS = 15;
 	private final static int[] TIMER_INTERVALS = {250, 225, 200, 175, 150, 125, 100, 75, 50, 25};
 	
 	private int timerIntervalIndex = 6;
@@ -34,7 +40,7 @@ public class SnakeGUI extends JFrame {
 	private ArrowKeyHandler arrowKeyHandler;
 	
 	private int rows, columns;
-	private Deque<Square> snake;
+	private LinkedList<Square> snake;
 	
 	private MainPanel mainPanel;
 	
@@ -51,8 +57,8 @@ public class SnakeGUI extends JFrame {
 	public SnakeGUI() {
 		super("Snake");
 		setLayout(new FlowLayout());
-		rows = NUMBER_OF_ROWS;
-		columns = NUMBER_OF_COLUMNS;
+		rows = DEFAULT_NUMBER_OF_ROWS;
+		columns = DEFAULT_NUMBER_OF_COLUMNS;
 		arrowKeysEnabled = false;
 		
 		timerInterval = TIMER_INTERVALS[timerIntervalIndex];
@@ -64,7 +70,7 @@ public class SnakeGUI extends JFrame {
 		settings = new Settings();
 		goToMainMenu();
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setLocationRelativeTo(null);
+		setLocation(600, 220);
 		setSize(new Dimension(200, 150));
 		setVisible(true);
 		toFront();
@@ -72,13 +78,14 @@ public class SnakeGUI extends JFrame {
 	}
 	
 	private class MainPanel extends JPanel implements ActionListener {
+		private static final long serialVersionUID = -4094650848270578384L;
+		
 		private JButton newGameButton;
 		private JButton settingsButton;
 		private JButton quitButton;
 		
 		public MainPanel() {
 			super(new BorderLayout());
-			JPanel jp = new JPanel(new BorderLayout());
 			newGameButton = new JButton("New Game");
 			newGameButton.addActionListener(this);
 			newGameButton.setToolTipText("Start a new game");
@@ -113,8 +120,17 @@ public class SnakeGUI extends JFrame {
 	}
 	
 	private class Settings extends JPanel {
+		private static final long serialVersionUID = -3899929267086995198L;
+		
 		private JLabel speedLabel;
 		private JSlider speedSlider;
+		
+		private JLabel rowsLabel;
+		private JTextField rowsTextField;
+		
+		private JLabel columnsLabel;
+		private JTextField columnsTextField;
+		
 		private JButton confirmButton;
 		
 		public Settings() {
@@ -133,11 +149,65 @@ public class SnakeGUI extends JFrame {
 					timerIntervalIndex = speedSlider.getValue();
 				}
 			});
+			JPanel rowsAndColumns = new JPanel(new GridLayout(2, 2, 5, 5));
+			rowsLabel = new JLabel("Number of rows:");
+			rowsTextField = new JTextField(2);
+			rowsTextField.setText(String.valueOf(DEFAULT_NUMBER_OF_ROWS));
+			rowsTextField.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					int value;
+					try {
+						value = Integer.parseInt(rowsTextField.getText());
+					} catch(NumberFormatException nfe) {
+						rowsTextField.setText(String.valueOf(DEFAULT_NUMBER_OF_ROWS));
+						return;
+					}
+					if(value > MAX_NUMBER_OF_ROWS)
+						rowsTextField.setText(String.valueOf(MAX_NUMBER_OF_ROWS));
+					else if(value < MIN_NUMBER_OF_ROWS)
+						rowsTextField.setText(String.valueOf(MIN_NUMBER_OF_ROWS));
+				}
+			});
+			rowsAndColumns.add(rowsLabel);
+			rowsAndColumns.add(rowsTextField);
+			columnsLabel = new JLabel("Number of columns:");
+			columnsTextField = new JTextField(2);
+			columnsTextField.setText(String.valueOf(DEFAULT_NUMBER_OF_COLUMNS));
+			columnsTextField.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					int value;
+					try {
+						value = Integer.parseInt(columnsTextField.getText());
+					} catch(NumberFormatException nfe) {
+						columnsTextField.setText(String.valueOf(DEFAULT_NUMBER_OF_COLUMNS));
+						return;
+					}
+					if(value > MAX_NUMBER_OF_COLUMNS)
+						columnsTextField.setText(String.valueOf(MAX_NUMBER_OF_COLUMNS));
+					else if(value < MIN_NUMBER_OF_COLUMNS)
+						columnsTextField.setText(String.valueOf(MIN_NUMBER_OF_COLUMNS));
+				}
+			});
+			rowsAndColumns.add(columnsLabel);
+			rowsAndColumns.add(columnsTextField);
+			this.add(rowsAndColumns);
 			confirmButton = new JButton("Confirm");
 			confirmButton.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					timerInterval = TIMER_INTERVALS[timerIntervalIndex];
+					try {
+						rows = Integer.parseInt(rowsTextField.getText());
+					} catch(NumberFormatException nfe) {
+						rows = DEFAULT_NUMBER_OF_ROWS;
+					}
+					try {
+						columns = Integer.parseInt(columnsTextField.getText());
+					} catch(NumberFormatException nfe) {
+						columns = DEFAULT_NUMBER_OF_COLUMNS;
+					}
 					goToMainMenu();
 				}
 			});
@@ -158,36 +228,20 @@ public class SnakeGUI extends JFrame {
 	}
 	
 	private class Board extends JPanel {
+		private static final long serialVersionUID = -5456588177284039776L;
 		
-		public Board() {
-			setSize(new Dimension(columns * Square.SIZE.width, rows * Square.SIZE.height));
+		private Square[][] squares;
+
+		public Board(Square[][] squares) {
+			this.squares = squares;
 			setPreferredSize(new Dimension(columns * Square.SIZE.width, rows * Square.SIZE.height));
-			snake = new ArrayDeque<Square>();
-			Square s;
-			squares = new Square[rows][columns];
-			for(int y = 0; y < rows; y++) {
-				for(int x = 0; x < columns; x++) {
-					if((x == columns/2 - 1 || x == columns/2 || x == columns/2+1) && y == rows/2) {
-						s = new Square(Square.SNAKE, x, y);
-						snake.addFirst(s);
-					} else {
-						s = new Square(Square.EMPTY, x, y);
-					}
-					squares[y][x] = s;
-				}
-			}
-			int foodX, foodY = (int)(Math.random()*rows);
-			do {
-				foodX = (int)(Math.random()*columns);
-			} while((foodX == columns/2 - 1 || foodX == columns/2 || foodX == columns/2+1) && foodY == rows/2);
-			squares[foodY][foodX] = new Square(Square.FOOD, foodX, foodY);
 		}
 		
 		@Override
 		protected void paintComponent(Graphics g) {
 			super.paintComponent(g);
-			for(int y = 0; y < rows; y++) {
-				for(int x = 0; x < columns; x++) {
+			for(int y = 0; y < squares[0].length; y++) {
+				for(int x = 0; x < squares.length; x++) {
 					g.setColor(squares[y][x].getColor());
 					g.fillRect(x * Square.SIZE.width, y * Square.SIZE.height, Square.SIZE.width, Square.SIZE.height);
 				}
@@ -196,16 +250,35 @@ public class SnakeGUI extends JFrame {
 	}
 	
 	private void newGame() {
-		arrowKeysEnabled = true;
-		board = new Board();
+		snake = new LinkedList<Square>();
+		
+		Square s;
+		squares = new Square[rows][columns];
+		for(int y = 0; y < rows; y++) {
+			for(int x = 0; x < columns; x++) {
+				if((x == columns/2 - 1 || x == columns/2 || x == columns/2+1) && y == rows/2) {
+					s = new Square(Square.SNAKE, x, y);
+					snake.addFirst(s);
+				} else {
+					s = new Square(Square.EMPTY, x, y);
+				}
+				squares[y][x] = s;
+			}
+		}
+		int foodX, foodY = (int)(Math.random()*rows);
+		do {
+			foodX = (int)(Math.random()*columns);
+		} while((foodX == columns/2 - 1 || foodX == columns/2 || foodX == columns/2+1) && foodY == rows/2);
+		squares[foodY][foodX] = new Square(Square.FOOD, foodX, foodY);
+		board = new Board(squares);
+		
 		getContentPane().removeAll();
 		getContentPane().add(board);
-		getContentPane().setSize(columns * Square.SIZE.width, rows * Square.SIZE.height);
-		setLocation(500, 200);
 		pack();
 		repaint();
 		timer = new Timer(timerInterval, new TimerHandler());
 		timer.start();
+		arrowKeysEnabled = true;
 		currentDirection = EAST;
 		toFront();
 		requestFocus();
