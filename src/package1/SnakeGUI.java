@@ -22,8 +22,6 @@ import javax.swing.event.ChangeListener;
 
 public class SnakeGUI extends JFrame {
 	
-	private JFrame thisRef;
-	
 	private final static int NORTH = 1, EAST = 2, SOUTH = 3, WEST = 4;
 	private final static int NUMBER_OF_ROWS = 20, NUMBER_OF_COLUMNS = 20;
 	private final static int[] TIMER_INTERVALS = {250, 225, 200, 175, 150, 125, 100, 75, 50, 25};
@@ -38,10 +36,9 @@ public class SnakeGUI extends JFrame {
 	private int rows, columns;
 	private Deque<Square> snake;
 	
+	private MainPanel mainPanel;
+	
 	private Square[][] squares;
-	
-	private JPanel outerPanel;
-	
 	private Board board;
 	
 	private Settings settings;
@@ -49,32 +46,70 @@ public class SnakeGUI extends JFrame {
 	private Timer timer;
 	private int timerInterval;
 	
-	private MainPanel mainPanel;
-	
+	private boolean arrowKeysEnabled;
 	
 	public SnakeGUI() {
 		super("Snake");
-		thisRef = this;
+		setLayout(new FlowLayout());
+		rows = NUMBER_OF_ROWS;
+		columns = NUMBER_OF_COLUMNS;
+		arrowKeysEnabled = false;
 		
-		this.rows = NUMBER_OF_ROWS;
-		this.columns = NUMBER_OF_COLUMNS;
-		
-		this.timerInterval = TIMER_INTERVALS[timerIntervalIndex];
+		timerInterval = TIMER_INTERVALS[timerIntervalIndex];
 		
 		arrowKeyHandler = new ArrowKeyHandler();
 		addKeyListener(arrowKeyHandler);
 		
 		mainPanel = new MainPanel();
 		settings = new Settings();
-		outerPanel = new JPanel();
-		outerPanel.add(mainPanel);
-		add(outerPanel);
+		goToMainMenu();
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setLocationRelativeTo(null);
 		setSize(new Dimension(200, 150));
-//		setResizable(false);
 		setVisible(true);
 		toFront();
+		requestFocus();
+	}
+	
+	private class MainPanel extends JPanel implements ActionListener {
+		private JButton newGameButton;
+		private JButton settingsButton;
+		private JButton quitButton;
+		
+		public MainPanel() {
+			super(new BorderLayout());
+			JPanel jp = new JPanel(new BorderLayout());
+			newGameButton = new JButton("New Game");
+			newGameButton.addActionListener(this);
+			newGameButton.setToolTipText("Start a new game");
+			settingsButton = new JButton("Settings");
+			settingsButton.addActionListener(this);
+			settingsButton.setToolTipText("Change settings such as level and speed");
+			quitButton = new JButton("Quit");
+			quitButton.addActionListener(this);
+			quitButton.setToolTipText("Quit the game");
+			add(newGameButton, BorderLayout.NORTH);
+			add(settingsButton, BorderLayout.CENTER);
+			add(quitButton, BorderLayout.SOUTH);
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent ae) {
+			if(ae.getSource() == newGameButton)
+				newGame();
+			else if(ae.getSource() == settingsButton)
+				goToSettings();
+			else if(ae.getSource() == quitButton)
+				System.exit(0);
+		}
+	}
+	
+	private void goToMainMenu() {
+		arrowKeysEnabled = false;
+		getContentPane().removeAll();
+		getContentPane().add(mainPanel);
+		setSize(new Dimension(200, 150));
+		repaint();
 	}
 	
 	private class Settings extends JPanel {
@@ -83,7 +118,7 @@ public class SnakeGUI extends JFrame {
 		private JButton confirmButton;
 		
 		public Settings() {
-			super(new BorderLayout());
+			super(new GridLayout(0, 1));
 			speedLabel = new JLabel("Snake speed");
 			speedSlider = new JSlider(JSlider.HORIZONTAL, 0, TIMER_INTERVALS.length-1, timerIntervalIndex);
 			speedSlider.setMinorTickSpacing(1);
@@ -103,19 +138,23 @@ public class SnakeGUI extends JFrame {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					timerInterval = TIMER_INTERVALS[timerIntervalIndex];
-					outerPanel.removeAll();
-					outerPanel.add(mainPanel);
-					thisRef.setSize(new Dimension(200, 150));
-					thisRef.repaint();
+					goToMainMenu();
 				}
 			});
-			this.add(speedLabel, BorderLayout.NORTH);
-			this.add(speedSlider, BorderLayout.CENTER);
+			this.add(speedLabel);
+			this.add(speedSlider);
 			JPanel jp = new JPanel();
 			jp.add(confirmButton);
-			this.add(jp, BorderLayout.SOUTH);
+			this.add(jp);
 		}
-		
+	}
+	
+	private void goToSettings() {
+		arrowKeysEnabled = false;
+		getContentPane().removeAll();
+		getContentPane().add(settings);
+		pack();
+		repaint();
 	}
 	
 	private class Board extends JPanel {
@@ -151,17 +190,17 @@ public class SnakeGUI extends JFrame {
 				for(int x = 0; x < columns; x++) {
 					g.setColor(squares[y][x].getColor());
 					g.fillRect(x * Square.SIZE.width, y * Square.SIZE.height, Square.SIZE.width, Square.SIZE.height);
-//					System.out.println("Painted a square (x: " + x * Square.SIZE.width + ", y: " + y * Square.SIZE.height + ", of size " + Square.SIZE.width);
 				}
 			}
 		}
 	}
 	
 	private void newGame() {
+		arrowKeysEnabled = true;
 		board = new Board();
-		outerPanel.removeAll();
-		outerPanel.add(board);
-		outerPanel.setSize(columns * Square.SIZE.width, rows * Square.SIZE.height);
+		getContentPane().removeAll();
+		getContentPane().add(board);
+		getContentPane().setSize(columns * Square.SIZE.width, rows * Square.SIZE.height);
 		setLocation(500, 200);
 		pack();
 		repaint();
@@ -172,53 +211,14 @@ public class SnakeGUI extends JFrame {
 		requestFocus();
 	}
 	
-	private void settings() {
-		outerPanel.removeAll();
-		outerPanel.add(settings);
-		pack();
-		repaint();
-	}
-	
-	private class MainPanel extends JPanel implements ActionListener {
-		private JButton newGameButton;
-		private JButton settingsButton;
-		private JButton quitButton;
-		
-		public MainPanel() {
-			super(new BorderLayout());
-			JPanel jp = new JPanel(new BorderLayout());
-			newGameButton = new JButton("New Game");
-			newGameButton.addActionListener(this);
-			settingsButton = new JButton("Settings");
-			settingsButton.addActionListener(this);
-			settingsButton.setToolTipText("Change settings such as level and speed");
-			quitButton = new JButton("Quit");
-			quitButton.addActionListener(this);
-			add(newGameButton, BorderLayout.NORTH);
-			add(settingsButton, BorderLayout.CENTER);
-			add(quitButton, BorderLayout.SOUTH);
-//			setMaximumSize(new Dimension((newGameButton.getWidth()+5)*3, (newGameButton.getHeight()+5)*3));
-		}
-
-		@Override
-		public void actionPerformed(ActionEvent ae) {
-			if(ae.getSource() == newGameButton)
-				newGame();
-			else if(ae.getSource() == settingsButton)
-				settings();
-			else if(ae.getSource() == quitButton)
-				System.exit(0);
-		}
-
-	}
-	
 	private class TimerHandler implements ActionListener {
 
 		@Override
-		public void actionPerformed(ActionEvent arg0) {
+		public void actionPerformed(ActionEvent e) {
+			// Calculate coordinates of the square the snake is moving towards.
+			// Depends on current direction and whether the snake is at the edge of the board.
 			int nextX = snake.getFirst().getX();
 			int nextY = snake.getFirst().getY();
-//			System.out.println("The snake's head is now at (x: " + nextX + ", y: " + nextY + ")");
 			switch(currentDirection) {
 			case NORTH:
 				nextY--;
@@ -242,9 +242,8 @@ public class SnakeGUI extends JFrame {
 				break;
 			}
 			switch(squares[nextY][nextX].getType()) {
-//			case Square.SNAKE:
-//			case Square.WALL:
 			case Square.EMPTY:
+				// Hit an empty square. Move the tail of the snake into this square so that it now becomes the head of the snake.
 				int tailX = snake.getLast().getX();
 				int tailY = snake.getLast().getY();
 				Square tail = snake.removeLast();
@@ -256,11 +255,13 @@ public class SnakeGUI extends JFrame {
 				snake.addFirst(tail);
 				break;
 			case Square.FOOD:
+				// Hit a food square. Extend the length of the snake, and generate a new location for the food.
 				timer.stop();
 				Square food = squares[nextY][nextX];
 				squares[nextY][nextX] = new Square(Square.SNAKE, nextX, nextY);
 				snake.addFirst(squares[nextY][nextX]);
 				
+				// Find an empty square to move the food into.
 				int foodX, foodY;
 				do {
 					foodX = (int)(Math.random()*columns);
@@ -273,23 +274,22 @@ public class SnakeGUI extends JFrame {
 				timer.start();
 				break;
 			case Square.SNAKE:
+				// It is possible to "beat the timer", causing the snake's head to turn inwards and collide with its neck.
+				// This check prevents this.
 				Square head = snake.removeFirst();
 				if(squares[nextY][nextX].equals(snake.getFirst())) {
+					// Collision with neck, revert to previous direction.
 					currentDirection = previousDirection;
 					snake.addFirst(head);
 					break;
 				}
 			default:
-				// Game is lost.
+				// The snake hit a wall or itself. The game is lost.
 				System.out.println("The game was lost");
-//				removeKeyListener(arrowKeyHandler);
 				timer.stop();
-				outerPanel.removeAll();
 				int o = JOptionPane.showConfirmDialog(null, "Go to the main menu?", "You lost!", JOptionPane.OK_CANCEL_OPTION);
 				if(o == JOptionPane.OK_OPTION) {
-					outerPanel.add(mainPanel);
-					thisRef.setSize(new Dimension(200, 150));
-					thisRef.repaint();
+					goToMainMenu();
 				}
 				else {
 					System.exit(0);
@@ -298,7 +298,6 @@ public class SnakeGUI extends JFrame {
 			}
 			repaint();
 		}
-		
 	}
 	
 	private class ArrowKeyHandler extends KeyAdapter {
@@ -308,38 +307,70 @@ public class SnakeGUI extends JFrame {
 			boolean northOrSouth = currentDirection == NORTH || currentDirection == SOUTH;
 			previousDirection = currentDirection;
 			switch(ke.getKeyCode()) {
+			// An arrow key was pressed. Change direction of the snake to that of the arrow's. Nothing happens if the snake's already heading in that direction.
 			case KeyEvent.VK_LEFT:
-				if(northOrSouth) {
+				if(arrowKeysEnabled && northOrSouth) {
 					currentDirection = WEST;
-					System.out.println("The snake is now heading west.");
 				}
 				break;
 			case KeyEvent.VK_RIGHT:
-				if(northOrSouth) {
+				if(arrowKeysEnabled && northOrSouth) {
 					currentDirection = EAST;
-					System.out.println("The snake is now heading east.");
 				}
 				break;
 			case KeyEvent.VK_UP:
-				if(!northOrSouth) {
+				if(arrowKeysEnabled && !northOrSouth) {
 					currentDirection = NORTH;
-					System.out.println("The snake is now heading north.");
 				}
 				break;
 			case KeyEvent.VK_DOWN:
-				if(!northOrSouth) {
+				if(arrowKeysEnabled && !northOrSouth) {
 					currentDirection = SOUTH;
-					System.out.println("The snake is now heading south.");
 				}
 				break;
+			// The P key was pressed. Pause the game.
+			case KeyEvent.VK_P:
+				pause();
+				break;
+			// The ESC key was pressed.
+			case KeyEvent.VK_ESCAPE:
+				// In game. Pause the game and ask if the player wants to go to the main menu.
+				if(getContentPane().getComponents()[0] instanceof Board) {
+					pause();
+					int o = JOptionPane.showConfirmDialog(null, "Go to the main menu?", null, JOptionPane.OK_CANCEL_OPTION);
+					if(o == JOptionPane.OK_OPTION)
+						goToMainMenu();
+					else
+						pause(); // Unpause.
+				}
+				// In the main menu. Ask if the player wants to quit the game.
+				else if(getContentPane().getComponents()[0] instanceof MainPanel) {
+					int o = JOptionPane.showConfirmDialog(null, "Quit?", null, JOptionPane.OK_CANCEL_OPTION);
+					if(o == JOptionPane.OK_OPTION)
+						System.exit(0);
+				}
+				// In the settings menu. Go directly back to the main menu.
+				else if(getContentPane().getComponents()[0] instanceof Settings) {
+					goToMainMenu();
+				}
 			default:
 				break;
 			}
 		}
 	}
 	
-	public static void main(String[] args) {
-		SnakeGUI snakeGui = new SnakeGUI();
+	// Pause the game if the timer is running, start the game if the timer isn't.
+	private void pause() {
+		if(timer.isRunning()) {
+			arrowKeysEnabled = false;
+			timer.stop();
+		}
+		else {
+			arrowKeysEnabled = true;
+			timer.start();
+		}
 	}
-
+	public static void main(String[] args) {
+		new SnakeGUI();
+	}
 }

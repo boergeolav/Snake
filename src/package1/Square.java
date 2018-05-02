@@ -33,6 +33,7 @@ public class Square {
 			color = Color.GREEN;
 			break;
 		default:
+			this.type = EMPTY;
 			color = Color.WHITE;
 			break;
 		}
